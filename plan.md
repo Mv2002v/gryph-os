@@ -1,120 +1,161 @@
-# Study Assistant — Development Plan (14h demo)
+# Study Assistant (StudySpark) — Development Plan (14h demo)
 
 ## 1) Objectives
-- Prove the **core workflow** works with real services: **Gemini PDF→deadlines**, **Gemini study material→quiz JSON**, **Vapi outbound call**.
-- Build a **V1 web app** (React + FastAPI + MongoDB) around the proven core: upload → extract → calendar → quiz gen → call → results.
-- Add **email/password auth** with a **test bypass** after core UX is stable.
-- Ship a **bright, unique, bug-free UI** with a cool theme + dark mode toggle for demo.
+- ✅ Prove the **core workflow** works with real services: **Gemini PDF→deadlines**, **Gemini study material→quiz JSON**, **Vapi outbound call**.
+- ✅ Build a **V1 web app** (React + FastAPI + MongoDB) around the proven core: upload → extract → calendar → quiz gen → call → results.
+- ✅ Add **email/password auth** with a **demo bypass** (JWT + `/me` + profile update).
+- ✅ Ship a **bright, unique, bug-free UI** with a cool theme (Space Grotesk + Figtree, course color palette, cinematic call moment).
+- 🔜 Prepare **Phase 3+** enhancements for reliability + demo wow: webhook-based call completion, transcript scoring, reminders/notifications, extra polish.
 
 ---
 
 ## 2) Implementation Steps
 
-### Phase 1 — Core POC (Isolation; do not proceed until green)
+### Phase 1 — Core POC (Isolation; do not proceed until green) ✅ COMPLETE
 **Goal:** 1 Python script that validates the 3 failure-prone integrations end-to-end.
 
 **User stories (POC):**
-1. As a builder, I can send a syllabus PDF and get back **strict JSON deadlines**.
-2. As a builder, I can upload study material and get back a **strict JSON quiz**.
-3. As a builder, I can trigger a **real outbound voice call** via Vapi.
-4. As a builder, I can run the script repeatedly with consistent outputs.
-5. As a builder, I can see clear logs/errors when something fails.
+1. ✅ As a builder, I can send a syllabus PDF and get back **strict JSON deadlines**.
+2. ✅ As a builder, I can upload study material and get back a **strict JSON quiz**.
+3. ✅ As a builder, I can trigger a **real outbound voice call** via Vapi.
+4. ✅ As a builder, I can run the script repeatedly with consistent outputs.
+5. ✅ As a builder, I can see clear logs/errors when something fails.
 
-**Steps:**
-1. Web-search quick integration notes: Gemini PDF parsing via Emergent key; Vapi outbound call + how to list phone numbers and obtain `phoneNumberId` for `+1 (774) 334 9020`.
-2. Create `poc_integrations.py`:
-   - Input: `SYLLABUS_PDF_PATH`, `STUDY_MATERIAL_PATH` (pdf/txt), `TEST_PHONE`.
-   - Gemini call #1: extract events as JSON schema: `{course, title, dueDateISO, type, confidence, sourcePage}`.
-   - Gemini call #2: generate quiz JSON schema: `{course, questions:[{q, choices[], answerIndex, explanation, difficulty, topic}]}`.
-   - Vapi: using provided key, list numbers → map to `phoneNumberId`; place outbound call to `TEST_PHONE` with a minimal quiz script.
-3. Iterate prompts/JSON validation until:
-   - Deadlines parse is robust across 2-3 sample syllabi.
-   - Quiz generator returns valid JSON and good question quality.
-   - Vapi call successfully initiates and logs call id + status.
+**What was built / proven:**
+- `tests/poc_integrations.py`:
+  - Gemini (**gemini-2.5-pro**) extracts structured deadline JSON from PDF.
+  - Gemini (**gemini-2.5-pro**) generates strict quiz JSON from study material.
+  - Vapi lists phone numbers and resolves `phoneNumberId` for **+1 (774) 334-9020**.
 
-**Exit criteria:** POC script returns (a) valid deadlines JSON, (b) valid quiz JSON, (c) successful Vapi call initiation + status retrieval.
+**Phase 1 results:**
+- ✅ Gemini extracted **9 deadlines** from a sample syllabus PDF.
+- ✅ Gemini generated a valid **5-question** quiz from study material.
+- ✅ Vapi number resolved: **+17743349020 → phoneNumberId `c8c7fcf1-46cf-424d-9878-ef9e239e155c`**.
+
+**Exit criteria:** ✅ Met.
 
 ---
 
-### Phase 2 — V1 App Development (Core UX, no auth yet)
-**Goal:** Fast MVP UI + API wiring using the already-working integration code from Phase 1.
+### Phase 2 — V1 App Development (Core UX + Auth + UI) ✅ COMPLETE
+**Goal:** Build a full V1 web experience around the working integrations with a bright, demo-ready UI.
 
 **User stories (V1 core):**
-1. As a student, I can drag+drop 1–5 syllabus PDFs and see “Found X deadlines across Y courses”.
-2. As a student, I can view all extracted deadlines on a **calendar** color-coded by course.
-3. As a student, I can upload separate study material and generate a quiz for a selected course.
-4. As a student, I can click “Call me” and receive an AI phone quiz.
-5. As a student, I can see quiz/call results summarized on the dashboard.
+1. ✅ Student can sign up / log in / demo bypass.
+2. ✅ Student can upload a syllabus PDF and see “Found X deadlines…”
+3. ✅ Student can view all deadlines on a **calendar** color-coded by course.
+4. ✅ Student can upload separate study material and generate a quiz.
+5. ✅ Student can click “Call me” and receive an AI phone quiz.
+6. ✅ Student can see call status + transcript and call history.
 
-**Backend (FastAPI):**
-- Models (Mongo): User (optional later), Course, SyllabusUpload, DeadlineEvent, StudyMaterial, Quiz, CallSession/Result.
-- Endpoints:
-  - `POST /api/syllabi/upload` (multi PDF) → store file → Gemini extract → save events.
-  - `GET /api/events` → list events grouped by course.
-  - `POST /api/material/upload` → store material.
-  - `POST /api/quiz/generate` → Gemini quiz JSON → persist.
-  - `POST /api/call/start` → Vapi outbound call using stored quiz.
-  - `GET /api/results` → latest quiz/call summaries.
+**Backend (FastAPI + MongoDB):**
+- ✅ Auth:
+  - `POST /api/auth/signup`
+  - `POST /api/auth/login`
+  - `POST /api/auth/demo`
+  - `GET /api/auth/me`
+  - `PUT /api/auth/me`
+  - JWT stored client-side.
+- ✅ Syllabus extraction:
+  - `POST /api/syllabi/upload` → store file → Gemini extract → create Course + Events.
+  - `GET /api/courses`, `GET /api/events`
+  - `DELETE /api/events/{id}`, `DELETE /api/courses/{course_id}`
+- ✅ Quiz generation (separate study material):
+  - `POST /api/quiz/generate` supports file **or** pasted text; supports topic, difficulty, #questions.
+  - `GET /api/quizzes`, `GET /api/quizzes/{id}`, `DELETE /api/quizzes/{id}`
+- ✅ Vapi calling:
+  - `POST /api/call/start` (E.164 validation) → creates call session + starts polling.
+  - `GET /api/calls`, `GET /api/calls/{session_id}`
+  - Polling-based transcript/status updates (webhook planned for Phase 3).
 
-**Frontend (React):**
-- Bright, unique theme (gradient surfaces + neon accents) + dark mode toggle.
-- Pages:
-  - Dashboard: syllabus upload, progress states, “Found X deadlines”.
-  - Calendar: month/week view, colored event chips by course.
-  - Quiz: upload material → generate → preview questions.
-  - Call modal: phone input, course/quiz selection, schedule “call now” (MVP: immediate call).
-  - Results panel: call status + quiz outcomes.
+**Frontend (React + Tailwind + shadcn/ui + framer-motion):**
+- ✅ Pages:
+  - `/auth` (Login / Signup tabs + **Continue as demo**)
+  - `/` Dashboard (bento layout: upload + urgency + stats)
+  - `/calendar` Month calendar with event chips; event dialog + delete
+  - `/quiz` Quiz Studio (upload/text → generate; preview + library)
+  - `/calls` Call Center (quiz picker + phone normalization + cinematic active call modal)
+  - `/settings` Profile updates (name + phone)
+- ✅ UI/Theme:
+  - Bright unique theme with subtle gradient blobs (≤20% viewport) and solid cards.
+  - Typography: **Space Grotesk** headings, **Figtree** body.
+  - Course palette: **sky/lime/sun/pink/teal/violet/orange** chips and dots.
+  - Animations: framer-motion page transitions; `animate-callPulse` + `animate-ringWiggle` for the call wow moment.
 
-**Testing checkpoint (end of Phase 2):** 1 full E2E run: upload syllabus → calendar populated → upload study material → quiz generated → place call → result shown.
-
----
-
-### Phase 3 — Add Auth + Personalization (email/password + test bypass)
-**Goal:** Add auth without breaking core.
-
-**User stories (auth):**
-1. As a user, I can sign up with email/password.
-2. As a user, I can log in and stay logged in (JWT).
-3. As a user, I can use a **test/demo bypass** to access the app quickly during demos.
-4. As a user, my uploads/events/quizzes are isolated to my account.
-5. As a user, I can log out.
-
-**Steps:**
-- Backend: JWT auth, password hashing, user-scoped queries.
-- Frontend: Auth screens + “Continue as Demo” bypass.
-- Migrate existing collections to include `userId`.
-
-**Testing checkpoint:** create 2 users (or demo + real) → confirm data isolation + core flow still works.
+**Testing checkpoint (end of Phase 2):** ✅ Passed.
+- ✅ Automated testing: **23/23 backend tests passed** + all key frontend flows validated.
 
 ---
 
-### Phase 4 — Polish + Reliability + Demo Readiness
+### Phase 3 — Reliability + Voice Call Completion + Results (Post-V1) 🔜 NEXT
+**Goal:** Improve call reliability, reduce polling, and produce meaningful “results” (scoring + summaries) from calls.
+
+**User stories (Phase 3):**
+1. As a student, I see **final call results** quickly without waiting for polling.
+2. As a student, I receive a **score breakdown** after the call.
+3. As a student, my quiz performance is tracked over time.
+4. As a builder, I can scale call flow with fewer background jobs.
+5. As a builder, I can debug call outcomes reliably.
+
+**Implementation steps:**
+- Webhook-based end-of-call completion:
+  - Add `POST /api/webhooks/vapi` endpoint.
+  - Configure assistant `server.url` + `serverMessages` to send `end-of-call-report` and transcript.
+  - Verify authenticity (Vapi credential-based webhook auth) and persist artifacts.
+- Score extraction from transcript:
+  - Post-process transcript with Gemini to compute:
+    - per-question correctness
+    - confidence/quality notes
+    - total score and study recommendations
+  - Store `score`, `breakdown`, and `recommendations` in `CallSession`.
+- Replace/augment polling:
+  - Keep polling as fallback; prefer webhook updates.
+- Hardening:
+  - retries/timeouts for external calls
+  - JSON schema validation for LLM outputs
+  - audit logs for uploads/calls
+
+**Testing checkpoint:**
+- Webhook event updates DB within seconds of call completion.
+- Score generation stable across 3 transcripts.
+
+---
+
+### Phase 4 — Polish + Demo Readiness + Growth Features 🔜 OPTIONAL
+**Goal:** Ship extra wow + student retention features.
+
 **User stories (polish):**
-1. As a student, I see urgency banners (e.g., “Midterm in 3 days”) based on event dates.
-2. As a student, I get clear error messages for bad PDFs/LLM failures.
-3. As a student, I can edit/delete an extracted event if the model made a mistake.
-4. As a student, I can re-generate a quiz with difficulty/length controls.
-5. As a student, the UI feels fast and visually delightful.
+1. As a student, I get **reminders** before deadlines.
+2. As a student, I can schedule a call “tonight at 7pm.”
+3. As a student, I can edit incorrect extracted deadlines.
+4. As a student, I have a clean mobile experience.
+5. As a student, the UI feels premium and delightful.
 
-**Steps:**
-- UX polish: skeleton loaders, toasts, empty states, responsive layout.
-- Add “Edit deadline” + “Delete event”.
-- Add quiz controls: #questions, difficulty.
-- Hardening: retries, timeouts, JSON schema validation, audit logging.
-- Prepare demo dataset + record backup video.
+**Implementation steps:**
+- Notifications/reminders:
+  - Email reminders (SendGrid) or cron-based backend reminders.
+  - Optional push notifications.
+- Call scheduling:
+  - Allow scheduling times; store planned call time.
+- Editing events:
+  - UI + API to edit event title/date/type.
+- UI enhancements:
+  - skeleton loaders for AI steps
+  - optional confetti/Lottie for “Found X deadlines”
+  - responsive refinements (mobile-first layouts)
 
 ---
 
 ## 3) Next Actions (immediate)
-1. Run Phase 1 web-search + create `poc_integrations.py`.
-2. Use Vapi key to **list phone numbers** and obtain `phoneNumberId` for `+1 (774) 334 9020`.
-3. Validate Gemini prompts + strict JSON parsing for (a) deadlines and (b) quiz.
-4. Only after Phase 1 is green: scaffold FastAPI + React, then wire endpoints + UI.
+1. ✅ Completed: POC + V1 build + full testing.
+2. 🔜 Add Vapi webhook endpoint and switch from polling-first to webhook-first.
+3. 🔜 Add transcript scoring + results breakdown using Gemini.
+4. 🔜 Add reminders + scheduling (optional depending on demo goals).
 
 ---
 
 ## 4) Success Criteria
-- POC: deadlines JSON + quiz JSON + Vapi outbound call all work reliably from a standalone script.
-- V1: end-to-end web flow works with real uploads and live calendar rendering.
-- Auth: login/signup + demo bypass works; user data is isolated.
-- UI: bright unique theme, responsive, no broken states; demo-ready with backup video.
+- ✅ POC: deadlines JSON + quiz JSON + Vapi number resolution works reliably.
+- ✅ V1: end-to-end web flow works: auth → upload syllabus → calendar → quiz gen → call request → transcript/history.
+- ✅ UI: bright unique theme, responsive layout, cinematic call panel.
+- 🔜 Phase 3+: webhook-based completion and meaningful scored results.
+- 🔜 Phase 4+: reminders, scheduling, mobile refinements, additional polish.
