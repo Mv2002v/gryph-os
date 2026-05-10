@@ -8,8 +8,14 @@ from datetime import datetime
 
 from pypdf import PdfReader
 
-from google import genai
-from google.genai import types
+try:
+    from google import genai
+    from google.genai import types
+    _GENAI_AVAILABLE = True
+except ImportError:
+    genai = None
+    types = None
+    _GENAI_AVAILABLE = False
 
 # Accept both key names for flexibility
 GEMINI_API_KEY = (
@@ -171,7 +177,7 @@ async def extract_deadlines(pdf_path: str, session_id: str) -> dict:
         text = ""
 
     # Try Gemini if we have a key and got some text
-    if GEMINI_API_KEY and text.strip():
+    if _GENAI_AVAILABLE and GEMINI_API_KEY and text.strip():
         try:
             client = genai.Client(api_key=GEMINI_API_KEY)
             prompt = f"Syllabus text:\n\n{text[:30000]}"  # cap at 30k chars
