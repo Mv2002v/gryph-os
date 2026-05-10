@@ -3,6 +3,8 @@ import api from '../lib/api'
 
 const SemesterContext = createContext(null)
 
+const UNAUTH_PATHS = ['/auth', '/onboarding']
+
 export function SemesterProvider({ children }) {
   const [semesters, setSemesters] = useState([])
   const [activeSemesterId, setActiveSemesterIdState] = useState(
@@ -11,17 +13,20 @@ export function SemesterProvider({ children }) {
   const [loading, setLoading] = useState(false)
 
   const fetchSemesters = useCallback(async () => {
+    // Don't hit the API when not yet authenticated
+    const onUnauthPage = UNAUTH_PATHS.some(p => window.location.pathname.startsWith(p))
+    if (onUnauthPage) return
+
     setLoading(true)
     try {
       const { data } = await api.get('/semesters')
       setSemesters(data)
-      // If saved semester no longer exists, clear it
       if (activeSemesterId && !data.find(s => s._id === activeSemesterId)) {
         setActiveSemesterIdState(null)
         localStorage.removeItem('gos_active_semester')
       }
     } catch (e) {
-      // not logged in yet, silently skip
+      // silently skip
     } finally {
       setLoading(false)
     }

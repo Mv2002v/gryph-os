@@ -9,6 +9,9 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// Pages where a 401 is expected — don't redirect, just reject
+const UNAUTH_PATHS = ["/auth", "/onboarding"];
+
 api.interceptors.response.use(
   (r) => r,
   (err) => {
@@ -18,7 +21,10 @@ api.interceptors.response.use(
       } catch (e) {
         console.warn("Could not clear ss_user from localStorage", e);
       }
-      if (window.location.pathname !== "/auth") {
+      const onUnauthPage = UNAUTH_PATHS.some((p) =>
+        window.location.pathname.startsWith(p)
+      );
+      if (!onUnauthPage) {
         window.location.href = "/auth";
       }
     }
