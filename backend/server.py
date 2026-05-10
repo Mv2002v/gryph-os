@@ -224,16 +224,27 @@ def _user_payload(uid: str, user_doc: dict) -> dict:
 
 @api.post("/auth/signup")
 async def auth_signup(req: SignupReq, response: Response):
-    tokens: dict = {}
+    # Step 1: create the Cognito user
     try:
         cognito_signup(req.email, req.password, req.name)
-        tokens = cognito_login(req.email, req.password)
     except Exception as e:
         msg = str(e)
-        if "UsernameExistsException" in msg:
-            raise HTTPException(409, "Email already registered") from e
+        if "UsernameExistsException" in msg or "UsernameExists" in msg:
+            raise HTTPException(
+                409,
+                "An account with this email already exists. Please sign in instead.",
+            ) from e
         log.exception("Cognito signup failed")
         raise HTTPException(500, f"Signup failed: {msg}") from e
+
+    # Step 2: auto-login (best-effort — user was already created so don't fail the
+    # whole request if Cognito takes a moment to settle the new account state)
+    try:
+        tokens = cognito_login(req.email, req.password)
+    except Exception as e:
+        log.warning("Auto-login after signup failed (%s) — user must log in manually", e)
+        return {"created": True, "auto_login": False,
+                "message": "Account created. Please sign in with your credentials."}
 
     import jwt as pyjwt
     payload = pyjwt.decode(tokens["id_token"], options={"verify_signature": False})
@@ -241,7 +252,9 @@ async def auth_signup(req: SignupReq, response: Response):
     user = await _ensure_local_user_for(uid, req.email, name=req.name)
     _set_session_cookie(response, tokens["id_token"])
     return {
-        "token": tokens["id_token"],  # also returned for back-compat
+        "created": True,
+        "auto_login": True,
+        "token": tokens["id_token"],
         "access_token": tokens["access_token"],
         "refresh_token": tokens["refresh_token"],
         "user": _user_payload(uid, user),

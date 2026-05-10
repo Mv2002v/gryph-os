@@ -71,8 +71,10 @@ export function AuthProvider({ children }) {
   const signup = useCallback(
     async (email, password, name) => {
       const { data } = await api.post("/auth/signup", { email, password, name });
-      setSessionUser(data.user);
-      return data.user;
+      if (data.user) {
+        setSessionUser(data.user);
+      }
+      return data; // return full response so caller can check auto_login flag
     },
     [setSessionUser]
   );

@@ -84,12 +84,24 @@ export default function AuthPage() {
         toast.success('Welcome back.')
         navigate('/', { replace: true })
       } else {
-        await signup(data.email, data.password, data.name || '')
-        toast.success('Account created.')
-        navigate('/onboarding', { replace: true })
+        const result = await signup(data.email, data.password, data.name || '')
+        if (result?.auto_login === false) {
+          // Account created but auto-login couldn't complete — guide to sign in
+          toast.success('Account created! Sign in below to continue.')
+          switchTab('login')
+        } else {
+          toast.success('Account created.')
+          navigate('/onboarding', { replace: true })
+        }
       }
     } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Authentication failed')
+      const detail = err?.response?.data?.detail
+      if (err?.response?.status === 409) {
+        toast.error(detail || 'An account with this email already exists.')
+        switchTab('login')
+      } else {
+        toast.error(detail || 'Authentication failed. Please try again.')
+      }
     } finally {
       setBusy(false)
     }
