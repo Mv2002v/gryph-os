@@ -1,38 +1,34 @@
 [
   {
-    "content": "Verify AWS creds: list S3, describe Cognito user pool, check app client config",
+    "content": "Rotate JWT_SECRET (done)",
     "status": "completed"
   },
   {
-    "content": "Install boto3 + python-jose; add AWS env vars; write aws_clients.py",
+    "content": "Remove /api/auth/demo endpoint + ensure_demo_user from backend",
     "status": "completed"
   },
   {
-    "content": "Cognito auth: signup (admin_create_user + auto-confirm), login (USER_PASSWORD_AUTH), token validation via JWKS",
+    "content": "Remove 'Continue as demo' button from AuthPage",
     "status": "completed"
   },
   {
-    "content": "Wire Cognito on backend; keep demo bypass; update auth dependency",
+    "content": "Add DELETE /api/syllabi/{id} and DELETE /api/calls/{id} endpoints",
     "status": "completed"
   },
   {
-    "content": "S3: upload syllabi/study material to bucket gryph-os; replace /tmp; add presigned download",
+    "content": "Add POST /api/account/reset to wipe all user data",
     "status": "completed"
   },
   {
-    "content": "Phase 3: Vapi webhook /api/webhooks/vapi + Gemini transcript scoring; display results in Call Center",
+    "content": "Settings page: 'Manage data' panel with delete on courses, syllabi, quizzes, calls + 'Reset everything' button",
     "status": "completed"
   },
   {
-    "content": "Phase 4: In-app scheduler (CallSchedule model + background loop) + UI date/time picker",
+    "content": "Add delete actions on call history list + per-course delete on dashboard/calendar",
     "status": "completed"
   },
   {
-    "content": "Frontend updates: AWS-powered badges, results panel, schedule UI",
-    "status": "completed"
-  },
-  {
-    "content": "Final E2E testing via testing_agent_v3",
+    "content": "Re-test all delete flows",
     "status": "completed"
   }
 ]

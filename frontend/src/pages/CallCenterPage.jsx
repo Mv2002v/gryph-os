@@ -315,44 +315,66 @@ export default function CallCenterPage() {
                 {calls.map((c) => (
                   <li
                     key={c.id}
-                    className="py-3 flex items-center gap-3 cursor-pointer hover:bg-secondary/40 ui-fade rounded-control px-2"
-                    onClick={() => setActive(c)}
+                    className="py-3 flex items-center gap-3 hover:bg-secondary/40 ui-fade rounded-control px-2"
                     data-testid="call-history-row"
                   >
-                    <div
-                      className="h-9 w-9 rounded-xl grid place-items-center"
-                      style={
-                        c.status === "ended"
-                          ? { background: "#DCFCE7", color: "#14532D" }
-                          : c.status === "failed"
-                          ? { background: "#FEE2E2", color: "#7F1D1D" }
-                          : { background: "#E0F2FE", color: "#075985" }
-                      }
+                    <button
+                      onClick={() => setActive(c)}
+                      className="flex items-center gap-3 flex-1 min-w-0 text-left"
                     >
-                      <Phone className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate flex items-center gap-2">
-                        {c.quiz_title}
-                        {c.percent != null && (
-                          <span
-                            className="text-[10px] font-semibold rounded-full px-1.5 py-0.5"
-                            style={{
-                              background: c.percent >= 70 ? "#DCFCE7" : c.percent >= 40 ? "#FEF9C3" : "#FEE2E2",
-                              color: c.percent >= 70 ? "#14532D" : c.percent >= 40 ? "#713F12" : "#7F1D1D",
-                            }}
-                          >
-                            {c.percent}%
-                          </span>
-                        )}
+                      <div
+                        className="h-9 w-9 rounded-xl grid place-items-center shrink-0"
+                        style={
+                          c.status === "ended"
+                            ? { background: "#DCFCE7", color: "#14532D" }
+                            : c.status === "failed"
+                            ? { background: "#FEE2E2", color: "#7F1D1D" }
+                            : { background: "#E0F2FE", color: "#075985" }
+                        }
+                      >
+                        <Phone className="h-4 w-4" />
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {c.phone} · {fmtDate(new Date(c.created_at * 1000).toISOString().slice(0, 10))}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate flex items-center gap-2">
+                          {c.quiz_title}
+                          {c.percent != null && (
+                            <span
+                              className="text-[10px] font-semibold rounded-full px-1.5 py-0.5"
+                              style={{
+                                background: c.percent >= 70 ? "#DCFCE7" : c.percent >= 40 ? "#FEF9C3" : "#FEE2E2",
+                                color: c.percent >= 70 ? "#14532D" : c.percent >= 40 ? "#713F12" : "#7F1D1D",
+                              }}
+                            >
+                              {c.percent}%
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {c.phone} · {fmtDate(new Date(c.created_at * 1000).toISOString().slice(0, 10))}
+                        </div>
                       </div>
-                    </div>
-                    <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                      {c.status}
-                    </span>
+                      <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                        {c.status}
+                      </span>
+                    </button>
+                    <Button
+                      variant="ghost" size="icon"
+                      className="text-rose-600 hover:bg-rose-50"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          await api.delete(`/calls/${c.id}`);
+                          toast.success("Deleted");
+                          refreshAll();
+                        } catch {
+                          toast.error("Could not delete");
+                        }
+                      }}
+                      data-testid="call-history-delete"
+                      title="Delete call"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </li>
                 ))}
               </ul>

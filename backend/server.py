@@ -29,15 +29,10 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
 from auth import (  # noqa: E402
-    DEMO_EMAIL,
-    DEMO_USER_ID,
     LoginReq,
     SignupReq,
     get_current_principal,
     get_current_user_id,
-    hash_password,
-    make_local_token,
-    new_user_id,
 )
 from aws_clients import (  # noqa: E402
     aws_status,
@@ -162,20 +157,6 @@ async def ensure_indexes():
     await db.scheduled_calls.create_index([("user_id", 1)])
 
 
-async def ensure_demo_user():
-    existing = await db.users.find_one({"_id": DEMO_USER_ID})
-    if not existing:
-        await db.users.insert_one({
-            "_id": DEMO_USER_ID,
-            "email": DEMO_EMAIL,
-            "name": "Demo Student",
-            "phone": None,
-            "password_hash": hash_password("demo1234"),
-            "auth_source": "local",
-            "created_at": time.time(),
-        })
-
-
 async def get_or_create_user_from_principal(principal: dict) -> dict:
     """Resolve / lazy-create a Mongo user record from a token principal."""
     uid = principal["user_id"]
@@ -279,24 +260,6 @@ async def auth_login(req: LoginReq):
             "name": user.get("name"),
             "phone": user.get("phone"),
             "auth_source": "cognito",
-        },
-    }
-
-
-@api.post("/auth/demo")
-async def auth_demo():
-    """Demo bypass — issues a LOCAL JWT (not Cognito)."""
-    await ensure_demo_user()
-    token = make_local_token(DEMO_USER_ID, DEMO_EMAIL)
-    doc = await db.users.find_one({"_id": DEMO_USER_ID})
-    return {
-        "token": token,
-        "user": {
-            "id": DEMO_USER_ID,
-            "email": doc["email"],
-            "name": doc.get("name"),
-            "phone": doc.get("phone"),
-            "auth_source": "local-demo",
         },
     }
 
@@ -473,6 +436,17 @@ async def syllabus_download(syllabus_id: str, uid: str = Depends(get_current_use
     if not doc:
         raise HTTPException(404, "Not found")
     return {"url": s3_presigned_url(doc["s3_key"], expires_in=600)}
+
+
+@api.delete("/syllabi/{syllabus_id}")
+async def delete_syllabus(syllabus_id: str, uid: str = Depends(get_current_user_id)):
+    doc = await db.syllabi.find_one({"_id": syllabus_id, "user_id": uid})
+    if not doc:
+        raise HTTPException(404, "Not found")
+    if doc.get("s3_key"):
+        s3_delete(doc["s3_key"])
+    await db.syllabi.delete_one({"_id": syllabus_id, "user_id": uid})
+    return {"ok": True}
 
 
 # === Quiz generation ========================================================
@@ -728,6 +702,52 @@ async def force_score(session_id: str, uid: str = Depends(get_current_user_id)):
     return _scrub(fresh)
 
 
+@api.delete("/calls/{session_id}")
+async def delete_call(session_id: str, uid: str = Depends(get_current_user_id)):
+    res = await db.call_sessions.delete_one({"_id": session_id, "user_id": uid})
+    if res.deleted_count == 0:
+        raise HTTPException(404, "Call session not found")
+    return {"ok": True}
+
+
+# === Account / data management =============================================
+@api.get("/account/summary")
+async def account_summary(uid: str = Depends(get_current_user_id)):
+    return {
+        "courses": await db.courses.count_documents({"user_id": uid}),
+        "events": await db.events.count_documents({"user_id": uid}),
+        "syllabi": await db.syllabi.count_documents({"user_id": uid}),
+        "quizzes": await db.quizzes.count_documents({"user_id": uid}),
+        "calls": await db.call_sessions.count_documents({"user_id": uid}),
+        "scheduled": await db.scheduled_calls.count_documents(
+            {"user_id": uid, "status": "scheduled"}
+        ),
+    }
+
+
+@api.post("/account/reset")
+async def account_reset(uid: str = Depends(get_current_user_id)):
+    """Wipe ALL of the current user's content (keeps the account itself)."""
+    # Delete S3 blobs first
+    async for doc in db.syllabi.find({"user_id": uid}):
+        if doc.get("s3_key"):
+            s3_delete(doc["s3_key"])
+    async for doc in db.quizzes.find({"user_id": uid}):
+        if doc.get("s3_key"):
+            s3_delete(doc["s3_key"])
+
+    counts = {}
+    counts["events"] = (await db.events.delete_many({"user_id": uid})).deleted_count
+    counts["courses"] = (await db.courses.delete_many({"user_id": uid})).deleted_count
+    counts["syllabi"] = (await db.syllabi.delete_many({"user_id": uid})).deleted_count
+    counts["quizzes"] = (await db.quizzes.delete_many({"user_id": uid})).deleted_count
+    counts["calls"] = (await db.call_sessions.delete_many({"user_id": uid})).deleted_count
+    counts["scheduled"] = (
+        await db.scheduled_calls.delete_many({"user_id": uid})
+    ).deleted_count
+    return {"ok": True, "deleted": counts}
+
+
 # === Vapi webhook ===========================================================
 @app.post("/api/webhooks/vapi")
 async def vapi_webhook(request: Request):
@@ -895,7 +915,6 @@ async def health():
 @app.on_event("startup")
 async def on_startup():
     await ensure_indexes()
-    await ensure_demo_user()
     global _SCHEDULER_TASK
     _SCHEDULER_TASK = asyncio.create_task(_scheduler_loop())
     log.info("StudySpark backend ready (Cognito=%s, S3=%s)",

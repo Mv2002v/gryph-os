@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { BookOpen, Sparkles, Calendar, Phone } from "lucide-react";
 
 export default function AuthPage() {
-  const { login, signup, demo } = useAuth();
+  const { login, signup } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState("login");
   const [email, setEmail] = useState("");
@@ -31,19 +31,6 @@ export default function AuthPage() {
       navigate("/", { replace: true });
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Auth failed");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const goDemo = async () => {
-    setBusy(true);
-    try {
-      await demo();
-      toast.success("Continuing as demo — enjoy!");
-      navigate("/", { replace: true });
-    } catch {
-      toast.error("Demo unavailable");
     } finally {
       setBusy(false);
     }
@@ -119,22 +106,7 @@ export default function AuthPage() {
               </form>
             </TabsContent>
           </Tabs>
-          <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
-            <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
-          </div>
-          <Button
-            variant="secondary"
-            className="w-full h-11 ui-press"
-            disabled={busy}
-            onClick={goDemo}
-            data-testid="auth-demo-bypass-button"
-          >
-            Continue as demo
-          </Button>
-          <p className="mt-4 text-[11px] text-center text-muted-foreground">
-            Demo bypass is for testing only. Email login still works.
-          </p>
-          <div className="mt-3 flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
+          <div className="my-6 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
             Auth secured by <span className="font-semibold">AWS Cognito</span>
           </div>

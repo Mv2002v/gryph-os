@@ -52,9 +52,7 @@ export function AuthProvider({ children }) {
   };
 
   const demo = async () => {
-    const { data } = await api.post("/auth/demo");
-    setSession(data.token, data.user);
-    return data.user;
+    throw new Error("Demo bypass disabled");
   };
 
   const logout = () => {
