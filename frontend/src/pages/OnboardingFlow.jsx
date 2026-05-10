@@ -671,16 +671,29 @@ export default function OnboardingFlow() {
     setFlowState(prev => ({ ...prev, uploadedFiles: files }))
     advanceTo('extraction')
 
-    try {
-      const formData = new FormData()
-      formData.append('file', files[0])
-      const { data } = await api.post('/syllabi/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-      setExtractionData(data)
-      setFlowState(prev => ({ ...prev, extractionData: data }))
-    } catch {
-      setExtractionError('Extraction failed. Please try again.')
+    const allEvents = []
+    let lastError = null
+
+    for (const file of Array.from(files)) {
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        const { data } = await api.post('/syllabi/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        if (data?.events) allEvents.push(...data.events)
+      } catch (err) {
+        const detail = err?.response?.data?.detail || err?.message || 'Unknown error'
+        lastError = `Failed on ${file.name}: ${detail}`
+      }
+    }
+
+    if (allEvents.length > 0) {
+      const merged = { events: allEvents }
+      setExtractionData(merged)
+      setFlowState(prev => ({ ...prev, extractionData: merged }))
+    } else {
+      setExtractionError(lastError || 'Extraction failed — check that the backend is running and your Gemini API key is valid.')
     }
   }, [advanceTo])
 

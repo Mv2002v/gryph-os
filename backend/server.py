@@ -64,7 +64,8 @@ db = mongo_client[os.environ.get("DB_NAME", "studyspark")]
 app = FastAPI(title="StudySpark API")
 api = APIRouter(prefix="/api")
 
-UPLOAD_TMP = Path("/tmp/studyspark_uploads")
+import tempfile
+UPLOAD_TMP = Path(tempfile.gettempdir()) / "studyspark_uploads"
 UPLOAD_TMP.mkdir(parents=True, exist_ok=True)
 
 PUBLIC_BACKEND_URL = os.environ.get("PUBLIC_BACKEND_URL")

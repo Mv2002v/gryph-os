@@ -1,4 +1,5 @@
 """Gemini-powered helpers: extract deadlines from syllabus PDF."""
+import asyncio
 import base64
 import json
 import os
@@ -7,7 +8,11 @@ import re
 from google import genai
 from google.genai import types
 
-EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
+# Accept both key names for flexibility
+GEMINI_API_KEY = (
+    os.environ.get("GEMINI_API_KEY")
+    or os.environ.get("EMERGENT_LLM_KEY")
+)
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
 
 _SYSTEM_EXTRACT = (
@@ -38,27 +43,39 @@ def _parse_json(raw: str) -> dict:
 
 async def extract_deadlines(pdf_path: str, session_id: str) -> dict:
     """Extract structured deadlines/events JSON from a syllabus PDF."""
-    client = genai.Client(api_key=EMERGENT_LLM_KEY)
+    if not GEMINI_API_KEY:
+        raise RuntimeError("No Gemini API key configured (set GEMINI_API_KEY in .env)")
+
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
     with open(pdf_path, "rb") as f:
         pdf_bytes = f.read()
 
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=[
-            types.Content(
-                role="user",
-                parts=[
-                    types.Part(
-                        inline_data=types.Blob(
-                            mime_type="application/pdf",
-                            data=base64.b64encode(pdf_bytes).decode("utf-8"),
-                        )
-                    ),
-                    types.Part(text="Extract all deadlines from this syllabus and return strict JSON only."),
-                ],
-            )
-        ],
-        config=types.GenerateContentConfig(system_instruction=_SYSTEM_EXTRACT),
-    )
+    pdf_b64 = base64.b64encode(pdf_bytes).decode("utf-8")
+
+    contents = [
+        types.Content(
+            role="user",
+            parts=[
+                types.Part(
+                    inline_data=types.Blob(
+                        mime_type="application/pdf",
+                        data=pdf_b64,
+                    )
+                ),
+                types.Part(text="Extract all deadlines from this syllabus and return strict JSON only."),
+            ],
+        )
+    ]
+    config = types.GenerateContentConfig(system_instruction=_SYSTEM_EXTRACT)
+
+    # Run the synchronous Gemini call off the event loop thread
+    def _call():
+        return client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=contents,
+            config=config,
+        )
+
+    response = await asyncio.to_thread(_call)
     return _parse_json(response.text)
