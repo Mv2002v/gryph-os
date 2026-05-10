@@ -12,83 +12,87 @@ export default function SyllabusUpload({ onComplete }) {
   const [files, setFiles] = useState([]);
   const inputRef = useRef(null);
 
+  const handleFiles = useCallback(
+    async (picked) => {
+      const pdfs = picked.filter((f) => f.name.toLowerCase().endsWith(".pdf"));
+      if (!pdfs.length) {
+        toast.error("Please drop PDF files");
+        return;
+      }
+      const items = pdfs.map((f) => ({
+        id: `${f.name}-${f.size}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        file: f,
+        name: f.name,
+        size: f.size,
+        status: "queued",
+        progress: 0,
+        events: 0,
+      }));
+      setFiles((prev) => [...prev, ...items]);
+      let totalEvents = 0;
+      const totalCourses = new Set();
+      for (const it of items) {
+        try {
+          setFiles((prev) =>
+            prev.map((p) => (p.id === it.id ? { ...p, status: "uploading", progress: 12 } : p))
+          );
+          const fd = new FormData();
+          fd.append("file", it.file, it.file.name);
+          const pulse = setInterval(() => {
+            setFiles((prev) =>
+              prev.map((p) =>
+                p.id === it.id && p.progress < 92 ? { ...p, progress: p.progress + 4 } : p
+              )
+            );
+          }, 700);
+          const { data } = await api.post("/syllabi/upload", fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          clearInterval(pulse);
+          const ev = data.counts?.events ?? data.events?.length ?? 0;
+          totalEvents += ev;
+          if (data.course?.code) totalCourses.add(data.course.code);
+          setFiles((prev) =>
+            prev.map((p) =>
+              p.id === it.id
+                ? { ...p, status: "done", progress: 100, events: ev, course: data.course?.code }
+                : p
+            )
+          );
+        } catch (err) {
+          console.error("Syllabus upload failed", err);
+          setFiles((prev) =>
+            prev.map((p) => (p.id === it.id ? { ...p, status: "error", progress: 100 } : p))
+          );
+          toast.error(
+            "Failed to extract: " + (err?.response?.data?.detail || err.message || "unknown")
+          );
+        }
+      }
+      if (totalEvents > 0) {
+        toast.success(`Found ${totalEvents} deadlines across ${totalCourses.size} courses`);
+        onComplete?.({ events: totalEvents, courses: totalCourses.size });
+      }
+    },
+    [onComplete]
+  );
+
   const onSelect = (e) => {
     const picked = Array.from(e.target.files || []);
     void handleFiles(picked);
     if (e.target) e.target.value = "";
   };
 
-  const onDrop = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDrag(false);
-    const picked = Array.from(e.dataTransfer?.files || []);
-    void handleFiles(picked);
-  }, []);
-
-  const handleFiles = async (picked) => {
-    const pdfs = picked.filter((f) => f.name.toLowerCase().endsWith(".pdf"));
-    if (!pdfs.length) {
-      toast.error("Please drop PDF files");
-      return;
-    }
-    const items = pdfs.map((f) => ({
-      id: `${f.name}-${f.size}-${Date.now()}`,
-      name: f.name,
-      size: f.size,
-      status: "queued",
-      progress: 0,
-      events: 0,
-    }));
-    setFiles((prev) => [...prev, ...items]);
-    let totalEvents = 0;
-    let totalCourses = new Set();
-    for (const it of items) {
-      const f = pdfs.find(
-        (x) => `${x.name}-${x.size}-${Date.now()}` === it.id
-      ) || pdfs.find((x) => x.name === it.name);
-      try {
-        setFiles((prev) =>
-          prev.map((p) => (p.id === it.id ? { ...p, status: "uploading", progress: 12 } : p))
-        );
-        const fd = new FormData();
-        fd.append("file", f, f.name);
-        // simulate progress while waiting for AI
-        const pulse = setInterval(() => {
-          setFiles((prev) =>
-            prev.map((p) =>
-              p.id === it.id && p.progress < 92 ? { ...p, progress: p.progress + 4 } : p
-            )
-          );
-        }, 700);
-        const { data } = await api.post("/syllabi/upload", fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        clearInterval(pulse);
-        const ev = data.counts?.events ?? data.events?.length ?? 0;
-        totalEvents += ev;
-        if (data.course?.code) totalCourses.add(data.course.code);
-        setFiles((prev) =>
-          prev.map((p) =>
-            p.id === it.id
-              ? { ...p, status: "done", progress: 100, events: ev, course: data.course?.code }
-              : p
-          )
-        );
-      } catch (err) {
-        setFiles((prev) =>
-          prev.map((p) => (p.id === it.id ? { ...p, status: "error", progress: 100 } : p))
-        );
-        toast.error(
-          "Failed to extract: " + (err?.response?.data?.detail || err.message || "unknown")
-        );
-      }
-    }
-    if (totalEvents > 0) {
-      toast.success(`Found ${totalEvents} deadlines across ${totalCourses.size} courses`);
-      onComplete?.({ events: totalEvents, courses: totalCourses.size });
-    }
-  };
+  const onDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDrag(false);
+      const picked = Array.from(e.dataTransfer?.files || []);
+      void handleFiles(picked);
+    },
+    [handleFiles]
+  );
 
   return (
     <Card className="rounded-card border border-border bg-card shadow-soft p-4 sm:p-6">

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ export default function DashboardPage() {
   const [quizzes, setQuizzes] = useState([]);
   const [calls, setCalls] = useState([]);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     try {
       const [e, c, q, cl] = await Promise.all([
         api.get("/events"),
@@ -30,14 +30,14 @@ export default function DashboardPage() {
       setCourses(c.data);
       setQuizzes(q.data);
       setCalls(cl.data);
-    } catch {
-      // handled by interceptor
+    } catch (err) {
+      console.error("Dashboard refresh failed", err);
     }
-  };
+  }, []);
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, [refresh]);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6">

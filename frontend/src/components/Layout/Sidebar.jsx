@@ -65,8 +65,8 @@ export function Sidebar() {
           variant="ghost"
           size="sm"
           className="w-full justify-start"
-          onClick={() => {
-            logout();
+          onClick={async () => {
+            await logout();
             navigate("/auth", { replace: true });
           }}
           data-testid="sidebar-logout-button"

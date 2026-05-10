@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import DeadlinesCalendar from "@/components/DeadlinesCalendar";
 import CoursesLegend from "@/components/CoursesLegend";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -10,14 +10,19 @@ export default function CalendarPage() {
   const [events, setEvents] = useState([]);
   const [courses, setCourses] = useState([]);
 
-  const refresh = async () => {
-    const [e, c] = await Promise.all([api.get("/events"), api.get("/courses")]);
-    setEvents(e.data);
-    setCourses(c.data);
-  };
+  const refresh = useCallback(async () => {
+    try {
+      const [e, c] = await Promise.all([api.get("/events"), api.get("/courses")]);
+      setEvents(e.data);
+      setCourses(c.data);
+    } catch (err) {
+      console.error("Calendar refresh failed", err);
+    }
+  }, []);
+
   useEffect(() => {
     refresh();
-  }, []);
+  }, [refresh]);
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6">

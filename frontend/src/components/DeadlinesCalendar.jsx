@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
@@ -48,10 +48,13 @@ export default function DeadlinesCalendar({ events, courses, onChanged }) {
   const [cursor, setCursor] = useState({ y: today.getFullYear(), m: today.getMonth() });
   const [selected, setSelected] = useState(null);
 
-  const courseColor = (courseId) => {
-    const c = courses.find((x) => x.id === courseId);
-    return COURSE_PALETTE[(c?.color_index ?? 0) % COURSE_PALETTE.length];
-  };
+  const courseColor = useCallback(
+    (courseId) => {
+      const c = courses.find((x) => x.id === courseId);
+      return COURSE_PALETTE[(c?.color_index ?? 0) % COURSE_PALETTE.length];
+    },
+    [courses]
+  );
 
   const eventsByDay = useMemo(() => {
     const map = {};
@@ -62,7 +65,7 @@ export default function DeadlinesCalendar({ events, courses, onChanged }) {
     return map;
   }, [events]);
 
-  const grid = useMemo(() => monthGrid(cursor.y, cursor.m), [cursor]);
+  const grid = useMemo(() => monthGrid(cursor.y, cursor.m), [cursor.y, cursor.m]);
 
   const goPrev = () => {
     const d = new Date(cursor.y, cursor.m - 1, 1);
@@ -113,13 +116,13 @@ export default function DeadlinesCalendar({ events, courses, onChanged }) {
         ))}
       </div>
       <div className="grid grid-cols-7 gap-1.5">
-        {grid.map(({ date, inMonth }, i) => {
+        {grid.map(({ date, inMonth }) => {
           const key = iso(date);
           const dayEvents = eventsByDay[key] || [];
           const isToday = iso(today) === key;
           return (
             <div
-              key={i}
+              key={key}
               className={classnames(
                 "relative rounded-control border bg-card min-h-[92px] sm:min-h-[110px] p-1.5 sm:p-2 ui-fade",
                 inMonth ? "border-border" : "border-border/60 bg-secondary/30",

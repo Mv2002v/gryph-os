@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,24 +32,28 @@ export default function SettingsPage() {
   const [scheduled, setScheduled] = useState([]);
   const [resetting, setResetting] = useState(false);
 
-  const refresh = async () => {
-    const [s, c, sy, q, cl, sc] = await Promise.all([
-      api.get("/account/summary"),
-      api.get("/courses"),
-      api.get("/syllabi"),
-      api.get("/quizzes"),
-      api.get("/calls"),
-      api.get("/schedule"),
-    ]);
-    setSummary(s.data);
-    setCourses(c.data);
-    setSyllabi(sy.data);
-    setQuizzes(q.data);
-    setCalls(cl.data);
-    setScheduled(sc.data);
-  };
+  const refresh = useCallback(async () => {
+    try {
+      const [s, c, sy, q, cl, sc] = await Promise.all([
+        api.get("/account/summary"),
+        api.get("/courses"),
+        api.get("/syllabi"),
+        api.get("/quizzes"),
+        api.get("/calls"),
+        api.get("/schedule"),
+      ]);
+      setSummary(s.data);
+      setCourses(c.data);
+      setSyllabi(sy.data);
+      setQuizzes(q.data);
+      setCalls(cl.data);
+      setScheduled(sc.data);
+    } catch (err) {
+      console.error("Settings refresh failed", err);
+    }
+  }, []);
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => { refresh(); }, [refresh]);
 
   const save = async () => {
     setBusy(true);

@@ -1,34 +1,34 @@
 [
   {
-    "content": "Rotate JWT_SECRET (done)",
+    "content": "Critical: initialize undefined variables in server.py + auth.py",
     "status": "completed"
   },
   {
-    "content": "Remove /api/auth/demo endpoint + ensure_demo_user from backend",
+    "content": "Critical: move auth token to httpOnly cookie (backend sets cookie + reads from cookie/header; frontend drops localStorage token)",
     "status": "completed"
   },
   {
-    "content": "Remove 'Continue as demo' button from AuthPage",
+    "content": "Critical: add useCallback for hook deps across all React files",
     "status": "completed"
   },
   {
-    "content": "Add DELETE /api/syllabi/{id} and DELETE /api/calls/{id} endpoints",
+    "content": "Important: refactor server.py — extract helpers from upload_syllabus, _poll_call, quiz_generate, vapi_webhook, get_call_session",
     "status": "completed"
   },
   {
-    "content": "Add POST /api/account/reset to wipe all user data",
+    "content": "Important: extract ActiveCallPanel to its own file",
     "status": "completed"
   },
   {
-    "content": "Settings page: 'Manage data' panel with delete on courses, syllabi, quizzes, calls + 'Reset everything' button",
+    "content": "Important: replace index-based keys with stable IDs",
     "status": "completed"
   },
   {
-    "content": "Add delete actions on call history list + per-course delete on dashboard/calendar",
+    "content": "Important: log empty catch blocks; replace nested ternaries with helpers",
     "status": "completed"
   },
   {
-    "content": "Re-test all delete flows",
+    "content": "Re-test app + lint",
     "status": "completed"
   }
 ]

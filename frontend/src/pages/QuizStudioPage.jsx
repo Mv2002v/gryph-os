@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,14 +27,18 @@ export default function QuizStudioPage() {
   const inputRef = useRef(null);
   const navigate = useNavigate();
 
-  const refresh = async () => {
-    const r = await api.get("/quizzes");
-    setQuizzes(r.data);
-    if (r.data?.length && !active) setActive(r.data[0]);
-  };
+  const refresh = useCallback(async () => {
+    try {
+      const r = await api.get("/quizzes");
+      setQuizzes(r.data);
+      setActive((current) => current || (r.data?.[0] ?? null));
+    } catch (err) {
+      console.error("Quiz library refresh failed", err);
+    }
+  }, []);
   useEffect(() => {
     refresh();
-  }, []);
+  }, [refresh]);
 
   const generate = async () => {
     if (!file && !text.trim()) {
@@ -244,12 +248,13 @@ export default function QuizStudioPage() {
 }
 
 function QuizSkeleton() {
+  const rows = ["sk-a", "sk-b", "sk-c"];
   return (
     <Card className="rounded-card border border-border bg-card shadow-soft p-5 space-y-3">
       <Skeleton className="h-6 w-1/2" />
       <Skeleton className="h-4 w-1/3" />
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="space-y-2">
+      {rows.map((id) => (
+        <div key={id} className="space-y-2">
           <Skeleton className="h-5 w-3/4" />
           <Skeleton className="h-4 w-2/3" />
           <Skeleton className="h-4 w-1/2" />
@@ -280,7 +285,7 @@ function QuizPreview({ quiz, onCall }) {
       <div className="mt-4 space-y-3">
         {(quiz.questions || []).map((q, i) => (
           <div
-            key={i}
+            key={`q-${i}-${(q.q || "").slice(0, 24)}`}
             className="rounded-control border border-border bg-card p-3"
             data-testid="quiz-question"
           >
@@ -292,7 +297,7 @@ function QuizPreview({ quiz, onCall }) {
                 const correct = j === q.answerIndex;
                 return (
                   <li
-                    key={j}
+                    key={`c-${i}-${j}-${(c || "").slice(0, 16)}`}
                     className="flex items-center gap-2 rounded-full border border-border px-2.5 py-1 text-xs"
                     style={
                       correct

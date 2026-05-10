@@ -16,10 +16,10 @@ def _parse_json(raw: str) -> dict:
     if m:
         s = m.group(1).strip()
     if not s.startswith("{"):
-        l = s.find("{")
-        r = s.rfind("}")
-        if l != -1 and r != -1:
-            s = s[l : r + 1]
+        left = s.find("{")
+        right = s.rfind("}")
+        if left != -1 and right != -1:
+            s = s[left : right + 1]
     return json.loads(s)
 
 

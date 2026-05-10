@@ -1,4 +1,4 @@
-"""Auth dependency — supports BOTH AWS Cognito tokens and the local demo JWT."""
+"""Auth dependency — supports AWS Cognito tokens via Authorization header OR httpOnly cookie."""
 import os
 import time
 import uuid
@@ -6,7 +6,7 @@ from typing import Optional
 
 import jwt as pyjwt
 import bcrypt
-from fastapi import Depends, HTTPException, status
+from fastapi import Cookie, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr, Field
 
@@ -16,10 +16,10 @@ LOCAL_JWT_SECRET = os.environ.get("JWT_SECRET", "dev-secret")
 JWT_ALGO = "HS256"
 JWT_TTL_SECONDS = 60 * 60 * 24 * 30
 
-bearer = HTTPBearer(auto_error=False)
+# Cookie name where the ID token lives (httpOnly, Secure, SameSite=Lax).
+SESSION_COOKIE = "ss_session"
 
-DEMO_USER_ID = "demo-user-001"
-DEMO_EMAIL = "demo@studyspark.app"
+bearer = HTTPBearer(auto_error=False)
 
 
 class SignupReq(BaseModel):
@@ -59,43 +59,59 @@ def new_user_id() -> str:
     return str(uuid.uuid4())
 
 
-async def get_current_principal(
-    creds: HTTPAuthorizationCredentials = Depends(bearer),
-) -> dict:
-    """Returns {'user_id': str, 'email': str, 'source': 'cognito'|'local'}."""
-    if not creds:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing token"
-        )
-    token = creds.credentials
-    # Decide which validator: Cognito tokens have specific issuer
+def _extract_token(request: Request,
+                   creds: Optional[HTTPAuthorizationCredentials]) -> Optional[str]:
+    """Prefer Authorization header; fall back to httpOnly session cookie."""
+    if creds and creds.credentials:
+        return creds.credentials
+    cookie_token = request.cookies.get(SESSION_COOKIE)
+    return cookie_token or None
+
+
+async def _validate_token(token: str) -> dict:
+    """Validate either a Cognito token (preferred) or our local HS256 token."""
+    payload: dict = {}
     try:
         unverified = pyjwt.decode(token, options={"verify_signature": False})
-    except Exception:
-        raise HTTPException(401, "Invalid token")
-    iss = unverified.get("iss", "")
+    except Exception as e:
+        raise HTTPException(401, f"Invalid token: {e}") from e
+    iss = unverified.get("iss", "") or ""
     if COGNITO_USER_POOL_ID and "cognito-idp" in iss:
         try:
             payload = await verify_cognito_token(token)
         except Exception as e:
-            raise HTTPException(401, f"Invalid Cognito token: {e}")
-        # Use 'sub' as user_id; resolve email
-        email = payload.get("email") or payload.get("username") or payload.get("cognito:username")
+            raise HTTPException(401, f"Invalid Cognito token: {e}") from e
         return {
             "user_id": payload.get("sub"),
-            "email": email,
+            "email": (
+                payload.get("email")
+                or payload.get("username")
+                or payload.get("cognito:username")
+            ),
             "source": "cognito",
         }
-    # Fall back to local JWT (demo bypass only)
+    # Local HS256 path (kept for parity; no endpoint currently issues these)
     try:
         payload = pyjwt.decode(token, LOCAL_JWT_SECRET, algorithms=[JWT_ALGO])
     except Exception as e:
-        raise HTTPException(401, f"Invalid token: {e}")
+        raise HTTPException(401, f"Invalid token: {e}") from e
     return {
-        "user_id": payload["sub"],
+        "user_id": payload.get("sub"),
         "email": payload.get("email"),
         "source": "local",
     }
+
+
+async def get_current_principal(
+    request: Request,
+    creds: HTTPAuthorizationCredentials = Depends(bearer),
+) -> dict:
+    token = _extract_token(request, creds)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing token"
+        )
+    return await _validate_token(token)
 
 
 async def get_current_user_id(
