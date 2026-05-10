@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: gryph-os-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: us-east-1
+      - key: COGNITO_REGION
+        value: us-east-1
+      - key: COGNITO_USER_POOL_ID
+        sync: false
+      - key: COGNITO_CLIENT_ID
+        sync: false
+      - key: COGNITO_CLIENT_SECRET
+        sync: false
+      - key: S3_BUCKET
+        value: gryph-os
+      - key: DB_NAME
+        value: gryph-os
+      - key: JWT_SECRET
+        sync: false
+      - key: MONGO_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: EMERGENT_LLM_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
+      - key: CORS_ORIGINS
+        value: "*"
