@@ -29,10 +29,10 @@
   },
   {
     "content": "Frontend updates: AWS-powered badges, results panel, schedule UI",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Final E2E testing via testing_agent_v3",
-    "status": "pending"
+    "status": "completed"
   }
 ]

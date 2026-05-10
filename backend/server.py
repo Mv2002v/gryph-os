@@ -407,8 +407,10 @@ async def upload_syllabus(file: UploadFile = File(...),
             log.warning("Skipping bad event %s: %s", ev, e)
 
     # Persist syllabus pointer record (for downloads)
+    syllabus_id = str(uuid.uuid4())
     await db.syllabi.insert_one({
-        "_id": str(uuid.uuid4()),
+        "_id": syllabus_id,
+        "id": syllabus_id,
         "user_id": uid,
         "course_id": course.id,
         "filename": file.filename,
