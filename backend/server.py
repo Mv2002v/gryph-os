@@ -401,7 +401,17 @@ async def _extract_with_gemini(local_path: Path, session_id: str) -> dict:
     try:
         return await extract_deadlines(str(local_path), session_id=session_id)
     except Exception as e:  # noqa: BLE001
+        msg = str(e)
         log.exception("Gemini deadline extraction failed")
+        if "RESOURCE_EXHAUSTED" in msg or "429" in msg:
+            raise HTTPException(
+                503,
+                "Gemini API quota exhausted. Create a new API key at "
+                "aistudio.google.com/app/apikey using a fresh Google Cloud project, "
+                "then set GEMINI_API_KEY in backend/.env"
+            ) from e
+        if "No Gemini API key" in msg:
+            raise HTTPException(503, "GEMINI_API_KEY not set in backend/.env") from e
         raise HTTPException(500, f"Could not extract deadlines: {e}") from e
     finally:
         try:
