@@ -12,11 +12,12 @@ import { Orb } from '@/components/ui/Orb'
 import { FlowControls } from '@/components/ui/FlowControls'
 import { useAuth } from '@/lib/auth'
 import api from '@/lib/api'
+import VoiceOnboarding from '@/pages/VoiceOnboarding'
 
 const MONO = "'JetBrains Mono', ui-monospace, monospace"
 const HEAD = "'Space Grotesk', ui-sans-serif, system-ui"
 
-const SCENE_LIST = ['boot', 'hero', 'auth', 'profile', 'upload', 'extraction', 'dashboard']
+const SCENE_LIST = ['boot', 'hero', 'auth', 'voice', 'dashboard']
 
 const transition = { duration: 0.35, ease: [0.16, 1, 0.3, 1] }
 
@@ -198,7 +199,7 @@ function SceneAuth({ onAdvance, setFlowState }) {
         toast.success('Account created.')
       }
       setFlowState(prev => ({ ...prev, user }))
-      onAdvance('profile')
+      onAdvance('voice')
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Authentication failed')
     } finally {
@@ -697,19 +698,6 @@ export default function OnboardingFlow() {
     }
   }, [advanceTo])
 
-  const controlScenes = ['auth', 'profile', 'upload']
-  const controlIdx = controlScenes.indexOf(scene)
-  const showControls = controlIdx !== -1
-
-  const handlePrev = useCallback(() => {
-    if (controlIdx > 0) advanceTo(controlScenes[controlIdx - 1])
-    else advanceTo('hero')
-  }, [controlIdx, advanceTo])
-
-  const handleNext = useCallback(() => {
-    if (controlIdx < controlScenes.length - 1) advanceTo(controlScenes[controlIdx + 1])
-  }, [controlIdx, advanceTo])
-
   const motionVariants = {
     enter: { opacity: 0, x: direction * 40 },
     center: { opacity: 1, x: 0 },
@@ -731,26 +719,9 @@ export default function OnboardingFlow() {
           {scene === 'boot' && <SceneBoot onAdvance={advanceTo} />}
           {scene === 'hero' && <SceneHero onAdvance={advanceTo} />}
           {scene === 'auth' && <SceneAuth onAdvance={advanceTo} setFlowState={setFlowState} />}
-          {scene === 'profile' && <SceneProfile onAdvance={advanceTo} />}
-          {scene === 'upload' && <SceneUpload onExtract={handleExtract} />}
-          {scene === 'extraction' && (
-            <SceneExtraction
-              extractionData={extractionData}
-              extractionError={extractionError}
-              onAdvance={advanceTo}
-            />
-          )}
+          {scene === 'voice' && <VoiceOnboarding />}
         </motion.div>
       </AnimatePresence>
-
-      {showControls && (
-        <FlowControls
-          total={3}
-          current={controlIdx}
-          onPrev={handlePrev}
-          onNext={controlIdx < 2 ? handleNext : undefined}
-        />
-      )}
     </div>
   )
 }
