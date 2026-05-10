@@ -112,7 +112,7 @@ export default function AuthPage() {
               <form onSubmit={submit} className="space-y-4">
                 <Field id="name" label="Name (optional)" value={name} onChange={setName} testid="auth-name-input" />
                 <Field id="email2" type="email" label="Email" value={email} onChange={setEmail} testid="auth-email-input" />
-                <Field id="password2" type="password" label="Password (min 6)" value={password} onChange={setPassword} testid="auth-password-input" />
+                <Field id="password2" type="password" label="Password (min 8)" value={password} onChange={setPassword} testid="auth-password-input" />
                 <Button type="submit" disabled={busy} className="w-full h-11 ui-press shadow-pop" data-testid="auth-submit-button">
                   {busy ? "Creating…" : "Create account"}
                 </Button>
@@ -134,6 +134,10 @@ export default function AuthPage() {
           <p className="mt-4 text-[11px] text-center text-muted-foreground">
             Demo bypass is for testing only. Email login still works.
           </p>
+          <div className="mt-3 flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            Auth secured by <span className="font-semibold">AWS Cognito</span>
+          </div>
         </Card>
       </div>
     </div>

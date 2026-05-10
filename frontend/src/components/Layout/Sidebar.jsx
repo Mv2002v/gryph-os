@@ -51,9 +51,15 @@ export function Sidebar() {
         ))}
       </nav>
       <div className="mt-auto p-3 border-t border-border">
-        <div className="px-2 pb-2">
+        <div className="px-2 pb-2 space-y-1">
           <div className="text-xs text-muted-foreground">Logged in as</div>
           <div className="text-sm font-medium truncate">{user?.name || user?.email}</div>
+          {user?.auth_source && (
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <span className={"inline-block h-1.5 w-1.5 rounded-full " + (user.auth_source === "cognito" ? "bg-emerald-500" : "bg-amber-500")} />
+              {user.auth_source === "cognito" ? "AWS Cognito" : "Demo session"}
+            </div>
+          )}
         </div>
         <Button
           variant="ghost"

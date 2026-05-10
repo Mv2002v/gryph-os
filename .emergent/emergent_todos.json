@@ -1,30 +1,38 @@
 [
   {
-    "content": "Phase 1: Get Gemini + Vapi integration playbooks",
+    "content": "Verify AWS creds: list S3, describe Cognito user pool, check app client config",
     "status": "completed"
   },
   {
-    "content": "Phase 1: Build poc_integrations.py testing all 3 cores",
+    "content": "Install boto3 + python-jose; add AWS env vars; write aws_clients.py",
     "status": "completed"
   },
   {
-    "content": "Phase 1: Run POC, fix until all 3 pass",
+    "content": "Cognito auth: signup (admin_create_user + auto-confirm), login (USER_PASSWORD_AUTH), token validation via JWKS",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Get design guidelines (bright/unique theme)",
+    "content": "Wire Cognito on backend; keep demo bypass; update auth dependency",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Build backend (auth + uploads + Gemini + Vapi)",
+    "content": "S3: upload syllabi/study material to bucket gryph-os; replace /tmp; add presigned download",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Build frontend (dashboard + calendar + quiz + call UI)",
+    "content": "Phase 3: Vapi webhook /api/webhooks/vapi + Gemini transcript scoring; display results in Call Center",
     "status": "completed"
   },
   {
-    "content": "Phase 2: All user stories covered + E2E testing via testing_agent_v3",
+    "content": "Phase 4: In-app scheduler (CallSchedule model + background loop) + UI date/time picker",
     "status": "completed"
+  },
+  {
+    "content": "Frontend updates: AWS-powered badges, results panel, schedule UI",
+    "status": "in_progress"
+  },
+  {
+    "content": "Final E2E testing via testing_agent_v3",
+    "status": "pending"
   }
 ]

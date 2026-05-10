@@ -92,3 +92,48 @@ async def generate_quiz(
     msg = UserMessage(text=text_part, file_contents=file_contents or None)
     raw = await chat.send_message(msg)
     return _parse_json(raw)
+
+
+async def score_call_transcript(transcript: str, quiz: dict, session_id: str) -> dict:
+    """Score a Vapi voice quiz call transcript against the original quiz JSON."""
+    system = (
+        "You are an academic grader scoring a voice quiz call. Given the transcript "
+        "of a phone call and the original quiz (with correct answers), determine for "
+        "each question whether the student answered correctly. The student answered in "
+        "natural language so accept paraphrases. Return ONLY valid JSON with this schema: "
+        "{ \"score\": int (number correct), \"total\": int, \"percent\": int (0-100), "
+        "\"summary\": str (1-2 sentence overall feedback), "
+        "\"weak_topics\": [str, ...], "
+        "\"strong_topics\": [str, ...], "
+        "\"breakdown\": [ { \"index\": int, \"q\": str, \"correct_answer\": str, "
+        "\"student_answer\": str|null, \"is_correct\": bool, \"note\": str } ] }"
+    )
+    chat = (
+        LlmChat(api_key=EMERGENT_LLM_KEY, session_id=session_id, system_message=system)
+        .with_model("gemini", GEMINI_MODEL)
+    )
+    qs = quiz.get("questions", [])
+    quiz_compact = {
+        "topic": quiz.get("topic"),
+        "course": quiz.get("course"),
+        "questions": [
+            {
+                "index": i,
+                "q": q.get("q"),
+                "correct_answer": (q.get("choices", []) or [None])[
+                    max(0, min(len(q.get("choices", [])) - 1, q.get("answerIndex", 0)))
+                ]
+                if q.get("choices")
+                else None,
+                "explanation": q.get("explanation"),
+            }
+            for i, q in enumerate(qs)
+        ],
+    }
+    text = (
+        "Score this voice quiz call. Return strict JSON.\n\n"
+        f"Quiz JSON:\n{json.dumps(quiz_compact, ensure_ascii=False)}\n\n"
+        f"Call transcript:\n{transcript[:14000]}"
+    )
+    raw = await chat.send_message(UserMessage(text=text))
+    return _parse_json(raw)

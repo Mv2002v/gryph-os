@@ -129,6 +129,10 @@ export default function DashboardPage() {
           </ul>
         )}
       </Card>
+
+      <div className="text-center text-[11px] text-muted-foreground pt-2">
+        Powered by <span className="font-semibold">AWS Cognito</span> · <span className="font-semibold">AWS S3</span> · <span className="font-semibold">Gemini 2.5 Pro</span> · <span className="font-semibold">Vapi.ai</span>
+      </div>
     </div>
   );
 }
