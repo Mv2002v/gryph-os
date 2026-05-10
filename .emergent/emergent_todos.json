@@ -1,0 +1,30 @@
+[
+  {
+    "content": "Phase 1: Get Gemini + Vapi integration playbooks",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 1: Build poc_integrations.py testing all 3 cores",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 1: Run POC, fix until all 3 pass",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 2: Get design guidelines (bright/unique theme)",
+    "status": "in_progress"
+  },
+  {
+    "content": "Phase 2: Build backend (auth + uploads + Gemini + Vapi)",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 2: Build frontend (dashboard + calendar + quiz + call UI)",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 2: All user stories covered + E2E testing via testing_agent_v3",
+    "status": "pending"
+  }
+]
