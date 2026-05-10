@@ -10,13 +10,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Trash2, Download, FileText, BookOpen, Sparkles, Phone, AlertTriangle,
-  RefreshCw, Clock,
+  Trash2, Download, FileText, BookOpen, AlertTriangle, RefreshCw,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import { fmtDate } from "@/lib/courseColors";
 
 export default function SettingsPage() {
   const { user, updateMe } = useAuth();
@@ -27,27 +25,18 @@ export default function SettingsPage() {
   const [summary, setSummary] = useState(null);
   const [courses, setCourses] = useState([]);
   const [syllabi, setSyllabi] = useState([]);
-  const [quizzes, setQuizzes] = useState([]);
-  const [calls, setCalls] = useState([]);
-  const [scheduled, setScheduled] = useState([]);
   const [resetting, setResetting] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
-      const [s, c, sy, q, cl, sc] = await Promise.all([
+      const [s, c, sy] = await Promise.all([
         api.get("/account/summary"),
         api.get("/courses"),
         api.get("/syllabi"),
-        api.get("/quizzes"),
-        api.get("/calls"),
-        api.get("/schedule"),
       ]);
       setSummary(s.data);
       setCourses(c.data);
       setSyllabi(sy.data);
-      setQuizzes(q.data);
-      setCalls(cl.data);
-      setScheduled(sc.data);
     } catch (err) {
       console.error("Settings refresh failed", err);
     }
@@ -150,139 +139,108 @@ export default function SettingsPage() {
 
         {/* My data */}
         <TabsContent value="data" className="mt-4 space-y-4">
+          {/* Summary counts */}
           <Card className="rounded-card border border-border bg-card shadow-soft p-4">
             <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
-              Stored across AWS S3 + MongoDB
+              Your semester data
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-center">
-              <Stat label="Courses"    value={summary?.courses ?? 0} />
-              <Stat label="Events"     value={summary?.events ?? 0} />
-              <Stat label="Syllabi"    value={summary?.syllabi ?? 0} />
-              <Stat label="Quizzes"    value={summary?.quizzes ?? 0} />
-              <Stat label="Calls"      value={summary?.calls ?? 0} />
-              <Stat label="Scheduled"  value={summary?.scheduled ?? 0} />
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <Stat label="Courses"   value={summary?.courses ?? 0} />
+              <Stat label="Deadlines" value={summary?.events ?? 0} />
+              <Stat label="Files"     value={summary?.syllabi ?? 0} />
             </div>
           </Card>
 
-          <DataList
-            title="Courses" icon={BookOpen} testid="settings-courses-list"
-            items={courses}
-            empty="No courses yet."
-            renderRow={(c) => (
-              <>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{c.code} {c.title ? `· ${c.title}` : ""}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {c.term || ""} {c.instructor ? `· ${c.instructor}` : ""}
-                  </div>
-                </div>
-                <DeleteBtn
-                  testid={`delete-course-${c.id}`}
-                  label="Delete course"
-                  description="This removes the course AND all its events + uploaded syllabi (S3 too)."
-                  onConfirm={() => del(`/courses/${c.id}`, "Course")}
-                />
-              </>
-            )}
-          />
+          {/* Courses — grouped with their syllabi */}
+          <Card className="rounded-card border border-border bg-card shadow-soft p-4" data-testid="settings-courses-list">
+            <div className="flex items-center gap-2 mb-3">
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <div className="font-heading text-sm tracking-tight">Courses</div>
+              <span className="text-xs text-muted-foreground">({courses.length})</span>
+            </div>
 
-          <DataList
-            title="Syllabi (S3)" icon={FileText} testid="settings-syllabi-list"
-            items={syllabi}
-            empty="No syllabi uploaded yet."
-            renderRow={(s) => (
-              <>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{s.filename}</div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    {(s.size/1024).toFixed(1)} KB · s3://{s.s3_bucket}/{s.s3_key}
-                  </div>
-                </div>
-                <Button
-                  variant="ghost" size="icon"
-                  onClick={() => downloadSyllabus(s.id, s.filename)}
-                  title="Download (presigned)"
-                  data-testid={`download-syllabus-${s.id}`}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-                <DeleteBtn
-                  testid={`delete-syllabus-${s.id}`}
-                  label="Delete syllabus"
-                  description="Removes this PDF from S3 and from your records (events stay)."
-                  onConfirm={() => del(`/syllabi/${s.id}`, "Syllabus")}
-                />
-              </>
-            )}
-          />
+            {courses.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-4 text-center">
+                No courses yet — add one from the Dashboard.
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {courses.map((c) => {
+                  const courseSyllabi = syllabi.filter(s => s.course_id === c.id);
+                  return (
+                    <li key={c.id} style={{
+                      borderRadius: 10,
+                      border: "1px solid rgba(20,40,90,0.08)",
+                      padding: "12px 14px",
+                      background: "rgba(20,40,90,0.02)",
+                    }}>
+                      {/* Course header row */}
+                      <div className="flex items-start gap-3">
+                        <div style={{
+                          fontFamily: "'JetBrains Mono', monospace",
+                          fontSize: 10, letterSpacing: "0.18em",
+                          background: "rgba(34,211,238,0.12)",
+                          color: "var(--gos-cyan, #22d3ee)",
+                          padding: "3px 8px", borderRadius: 999, whiteSpace: "nowrap",
+                          alignSelf: "flex-start", marginTop: 1,
+                        }}>
+                          {c.code}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate">
+                            {c.title || <span className="text-muted-foreground italic">No title</span>}
+                          </div>
+                          {(c.term || c.instructor) && (
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              {[c.term, c.instructor].filter(Boolean).join(" · ")}
+                            </div>
+                          )}
+                        </div>
+                        <DeleteBtn
+                          testid={`delete-course-${c.id}`}
+                          label="Delete course"
+                          description="Removes this course, all its deadlines, and uploaded files from S3."
+                          onConfirm={() => del(`/courses/${c.id}`, "Course")}
+                        />
+                      </div>
 
-          <DataList
-            title="Quizzes" icon={Sparkles} testid="settings-quizzes-list"
-            items={quizzes}
-            empty="No quizzes generated yet."
-            renderRow={(q) => (
-              <>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{q.title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {q.questions?.length || 0} questions · {q.difficulty}
-                  </div>
-                </div>
-                <DeleteBtn
-                  testid={`delete-quiz-${q.id}`}
-                  label="Delete quiz"
-                  description="Also deletes its source file from S3 if any."
-                  onConfirm={() => del(`/quizzes/${q.id}`, "Quiz")}
-                />
-              </>
-            )}
-          />
+                      {/* Syllabi attached to this course */}
+                      {courseSyllabi.length > 0 && (
+                        <div style={{ marginTop: 10, paddingLeft: 8, borderLeft: "2px solid rgba(34,211,238,0.2)", display: "flex", flexDirection: "column", gap: 6 }}>
+                          {courseSyllabi.map(s => (
+                            <div key={s.id} className="flex items-center gap-2">
+                              <FileText className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <span className="text-xs truncate flex-1">{s.filename}</span>
+                              <span className="text-xs text-muted-foreground shrink-0">{(s.size/1024).toFixed(0)} KB</span>
+                              <Button variant="ghost" size="icon" className="h-6 w-6"
+                                onClick={() => downloadSyllabus(s.id, s.filename)}
+                                title="Download">
+                                <Download className="h-3 w-3" />
+                              </Button>
+                              <DeleteBtn
+                                testid={`delete-syllabus-${s.id}`}
+                                label="Delete file"
+                                description="Removes this PDF from S3. Deadlines extracted from it stay."
+                                onConfirm={() => del(`/syllabi/${s.id}`, "File")}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
-          <DataList
-            title="Call history" icon={Phone} testid="settings-calls-list"
-            items={calls}
-            empty="No calls yet."
-            renderRow={(c) => (
-              <>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">
-                    {c.quiz_title} {c.percent != null ? <span className="text-emerald-600">· {c.percent}%</span> : null}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {c.phone} · {c.status} · {fmtDate(new Date(c.created_at * 1000).toISOString().slice(0,10))}
-                  </div>
-                </div>
-                <DeleteBtn
-                  testid={`delete-call-${c.id}`}
-                  label="Delete call"
-                  description="Removes this call session and its transcript."
-                  onConfirm={() => del(`/calls/${c.id}`, "Call")}
-                />
-              </>
+                      {courseSyllabi.length === 0 && (
+                        <div style={{ marginTop: 8, paddingLeft: 8, fontFamily: "'JetBrains Mono', monospace",
+                          fontSize: 10, letterSpacing: "0.14em", color: "rgba(20,40,90,0.3)",
+                          textTransform: "uppercase" }}>
+                          No outline uploaded
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
             )}
-          />
-
-          <DataList
-            title="Scheduled calls" icon={Clock} testid="settings-scheduled-list"
-            items={scheduled.filter((s) => s.status === "scheduled")}
-            empty="No upcoming scheduled calls."
-            renderRow={(s) => (
-              <>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{s.quiz_title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {s.phone} · {new Date(s.when_ts * 1000).toLocaleString()}
-                  </div>
-                </div>
-                <DeleteBtn
-                  testid={`cancel-schedule-${s.id}`}
-                  label="Cancel schedule"
-                  description="The scheduler won't fire this call."
-                  onConfirm={() => del(`/schedule/${s.id}`, "Scheduled call")}
-                />
-              </>
-            )}
-          />
+          </Card>
         </TabsContent>
 
         {/* Danger zone */}

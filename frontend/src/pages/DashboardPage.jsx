@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useSemester } from "@/contexts/SemesterContext";
-import SyllabusUpload from "@/components/SyllabusUpload";
+import AddCourse from "@/components/AddCourse";
 
 const COURSE_COLORS = ["cs", "math", "phys", "eng", "bus"];
 const COLOR_MAP = {
@@ -204,10 +204,10 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Syllabus upload */}
+        {/* Add course */}
         <div className="bento fade-up d4" style={{ flex: 1 }}>
-          <h4>Upload Syllabus</h4>
-          <SyllabusUpload onComplete={refresh} />
+          <h4 style={{ marginBottom: 16 }}>Add Course</h4>
+          <AddCourse onComplete={refresh} semesterId={activeSemesterId} />
         </div>
       </div>
     </div>

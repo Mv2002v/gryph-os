@@ -463,9 +463,29 @@ async def _record_syllabus_pointer(uid: str, course_id: str, filename: str,
     return sid
 
 
+class CourseCreate(BaseModel):
+    code: str
+    title: Optional[str] = None
+    term: Optional[str] = None
+    instructor: Optional[str] = None
+    semester_id: Optional[str] = None
+
+
+@api.post("/courses")
+async def create_course_endpoint(body: CourseCreate,
+                                 uid: str = Depends(get_current_user_id)):
+    course = await get_or_create_course(
+        uid, body.code, body.title, body.term, body.instructor,
+        semester_id=body.semester_id,
+    )
+    return course.model_dump()
+
+
 @api.post("/syllabi/upload")
 async def upload_syllabus(file: UploadFile = File(...),
                           semester_id: Optional[str] = Form(None),
+                          course_code: Optional[str] = Form(None),
+                          course_title: Optional[str] = Form(None),
                           uid: str = Depends(get_current_user_id)):
     content = await _read_uploaded_pdf(file, max_bytes=12 * 1024 * 1024)
     upload = _persist_pdf_to_s3(uid, file.filename, content)
@@ -475,12 +495,12 @@ async def upload_syllabus(file: UploadFile = File(...),
     )
 
     course_info = data.get("course") or {}
-    course_code = (
-        course_info.get("code") or file.filename.rsplit(".", 1)[0]
-    )[:32]
+    # User-provided values take priority over AI-extracted ones
+    final_code = (course_code or course_info.get("code") or file.filename.rsplit(".", 1)[0])[:32]
+    final_title = course_title or course_info.get("title")
     course = await get_or_create_course(
-        uid, course_code,
-        course_info.get("title"),
+        uid, final_code,
+        final_title,
         course_info.get("term"),
         course_info.get("instructor"),
         semester_id=semester_id,
