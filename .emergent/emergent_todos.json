@@ -1,0 +1,34 @@
+[
+  {
+    "content": "Critical: initialize undefined variables in server.py + auth.py",
+    "status": "completed"
+  },
+  {
+    "content": "Critical: move auth token to httpOnly cookie (backend sets cookie + reads from cookie/header; frontend drops localStorage token)",
+    "status": "completed"
+  },
+  {
+    "content": "Critical: add useCallback for hook deps across all React files",
+    "status": "completed"
+  },
+  {
+    "content": "Important: refactor server.py — extract helpers from upload_syllabus, _poll_call, quiz_generate, vapi_webhook, get_call_session",
+    "status": "completed"
+  },
+  {
+    "content": "Important: extract ActiveCallPanel to its own file",
+    "status": "completed"
+  },
+  {
+    "content": "Important: replace index-based keys with stable IDs",
+    "status": "completed"
+  },
+  {
+    "content": "Important: log empty catch blocks; replace nested ternaries with helpers",
+    "status": "completed"
+  },
+  {
+    "content": "Re-test app + lint",
+    "status": "completed"
+  }
+]

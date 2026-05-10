@@ -1,0 +1,108 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: ["class"],
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
+  theme: {
+    extend: {
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
+        secondary: { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
+        destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
+        muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
+        accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
+        popover: { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
+        card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
+        chart: { "1": "hsl(var(--chart-1))", "2": "hsl(var(--chart-2))", "3": "hsl(var(--chart-3))", "4": "hsl(var(--chart-4))", "5": "hsl(var(--chart-5))" },
+        gos: {
+          cyan: "var(--gos-cyan)",
+          "cyan-2": "var(--gos-cyan-2)",
+          "cyan-deep": "var(--gos-cyan-deep)",
+          magenta: "var(--gos-magenta)",
+          violet: "var(--gos-violet)",
+          lime: "var(--gos-lime)",
+          amber: "var(--gos-amber)",
+          emerald: "var(--gos-emerald)",
+        },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      fontFamily: {
+        display: ["Space Grotesk", "sans-serif"],
+        body: ["Inter", "sans-serif"],
+        mono: ["JetBrains Mono", "monospace"],
+      },
+      keyframes: {
+        "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" } },
+        "accordion-up": { from: { height: "var(--radix-accordion-content-height)" }, to: { height: "0" } },
+        orbPulse: {
+          "0%, 100%": { opacity: "0.7", transform: "scale(1)" },
+          "50%": { opacity: "1", transform: "scale(1.07)" },
+        },
+        orbSpin: {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
+        orbRing: {
+          "0%, 100%": { opacity: "0.5", transform: "scale(1)" },
+          "50%": { opacity: "0.9", transform: "scale(1.12)" },
+        },
+        fadeUp: {
+          "0%": { opacity: "0", transform: "translateY(14px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        fadeIn: { "0%": { opacity: "0" }, "100%": { opacity: "1" } },
+        eventDrop: {
+          "0%": { opacity: "0", transform: "translateY(-8px) scale(0.95)" },
+          "60%": { transform: "translateY(2px) scale(1.01)" },
+          "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
+        },
+        scanY: { "0%": { top: "0%" }, "100%": { top: "100%" } },
+        blink: { "0%, 100%": { opacity: "1" }, "50%": { opacity: "0" } },
+        drift1: {
+          "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+          "33%": { transform: "translate(30px, -20px) scale(1.05)" },
+          "66%": { transform: "translate(-20px, 10px) scale(0.95)" },
+        },
+        drift2: {
+          "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+          "33%": { transform: "translate(-40px, 30px) scale(1.08)" },
+          "66%": { transform: "translate(25px, -15px) scale(0.93)" },
+        },
+        pdfFly: {
+          "0%": { transform: "perspective(1400px) rotateY(-15deg) rotateX(5deg) translateZ(0px)" },
+          "50%": { transform: "perspective(1400px) rotateY(8deg) rotateX(-3deg) translateZ(30px)" },
+          "100%": { transform: "perspective(1400px) rotateY(-15deg) rotateX(5deg) translateZ(0px)" },
+        },
+        toastIn: {
+          "0%": { opacity: "0", transform: "translateY(12px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        "orb-pulse": "orbPulse 4s ease-in-out infinite",
+        "orb-spin": "orbSpin 6s linear infinite",
+        "orb-ring": "orbRing 4s ease-in-out infinite",
+        "fade-up": "fadeUp 0.8s cubic-bezier(.16,1,.3,1) forwards",
+        "fade-in": "fadeIn 0.7s ease forwards",
+        "event-drop": "eventDrop 0.6s cubic-bezier(.16,1,.3,1) forwards",
+        "scan-y": "scanY 2.5s linear infinite",
+        blink: "blink 1.6s ease-in-out infinite",
+        drift1: "drift1 14s ease-in-out infinite",
+        drift2: "drift2 18s ease-in-out infinite",
+        "pdf-fly": "pdfFly 10s ease-in-out infinite",
+        "toast-in": "toastIn 0.6s cubic-bezier(.16,1,.3,1) forwards",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
+};
